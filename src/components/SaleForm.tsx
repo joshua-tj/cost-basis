@@ -66,7 +66,7 @@ export function SaleForm() {
     }
   };
 
-  if (groups.length === 0) return null;
+  if (allGroupNames.length === 0) return null;
 
   return (
     <div className="sale-form">
