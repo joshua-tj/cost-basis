@@ -111,6 +111,7 @@ export function SaleHistory() {
     : ticker.sales;
 
   const totalQty = displaySales.reduce((s, sale) => s + sale.qty, 0);
+  const totalProceeds = displaySales.reduce((s, sale) => s + sale.salePrice * sale.qty, 0);
   const totalCostBasis = displaySales.reduce((s, sale) => s + sale.costBasisPerShare * sale.qty, 0);
   const totalGain = displaySales.reduce((s, sale) => s + sale.gainLoss, 0);
   const label = hasSelection ? `Selected (${selected.size})` : "Total Realized";
@@ -144,6 +145,7 @@ export function SaleHistory() {
             <th>Lot</th>
             <th className="num">Qty</th>
             <th className="num">Sale Price</th>
+            <th className="num">Proceeds</th>
             <th className="num">Cost Basis</th>
             <th className="num">Total Cost Basis</th>
             <th className="num">Gain/Loss</th>
@@ -185,6 +187,9 @@ export function SaleHistory() {
                 />
               </td>
               <td className="num">
+                ${(sale.salePrice * sale.qty).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </td>
+              <td className="num">
                 <EditableCell
                   value={sale.costBasisPerShare.toString()}
                   type="number"
@@ -212,7 +217,11 @@ export function SaleHistory() {
           <tr>
             <td colSpan={4}>{label}</td>
             <td className="num">{totalQty.toLocaleString()}</td>
-            <td colSpan={2}></td>
+            <td></td>
+            <td className="num">
+              ${totalProceeds.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </td>
+            <td></td>
             <td className="num">
               ${totalCostBasis.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </td>
