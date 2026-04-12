@@ -10,7 +10,8 @@ export function SaleForm() {
 
   const [group, setGroup] = useState(REST_GROUP);
   const [qty, setQty] = useState("");
-  const [price, setPrice] = useState("");
+  const [priceMode, setPriceMode] = useState<"price" | "proceeds">("price");
+  const [priceInput, setPriceInput] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [preview, setPreview] = useState<
     { lotId: string; qty: number; costBasis: number; gainLoss: number }[] | null
@@ -28,13 +29,20 @@ export function SaleForm() {
         .reduce((s, l) => s + l.remainingQty, 0)
     : 0;
 
+  const getSalePrice = (): number | null => {
+    const q = parseInt(qty);
+    const val = parseFloat(priceInput);
+    if (!q || q <= 0 || !val || val <= 0) return null;
+    return priceMode === "proceeds" ? val / q : val;
+  };
+
   const handlePreview = () => {
     setError("");
     setSuccess("");
     const q = parseInt(qty);
-    const p = parseFloat(price);
+    const salePrice = getSalePrice();
     if (!q || q <= 0) return setError("Enter a valid quantity");
-    if (!p || p <= 0) return setError("Enter a valid price");
+    if (salePrice === null) return setError(`Enter a valid ${priceMode === "proceeds" ? "proceeds" : "price"}`);
     if (q > available) return setError(`Only ${available} shares available`);
 
     const ranked = rankedLots(group);
@@ -47,7 +55,7 @@ export function SaleForm() {
         lotId: lot.id,
         qty: sell,
         costBasis: lot.costBasisPerShare,
-        gainLoss: (p - lot.costBasisPerShare) * sell,
+        gainLoss: (salePrice - lot.costBasisPerShare) * sell,
       });
       remaining -= sell;
     }
@@ -55,12 +63,14 @@ export function SaleForm() {
   };
 
   const handleConfirm = () => {
+    const salePrice = getSalePrice();
+    if (salePrice === null) return;
     try {
-      executeSale(parseInt(qty), parseFloat(price), date, group);
-      setSuccess(`Sold ${qty} shares @ $${price}`);
+      executeSale(parseInt(qty), salePrice, date, group);
+      setSuccess(`Sold ${qty} shares @ $${salePrice.toFixed(2)}`);
       setPreview(null);
       setQty("");
-      setPrice("");
+      setPriceInput("");
     } catch (e: any) {
       setError(e.message);
     }
@@ -106,16 +116,32 @@ export function SaleForm() {
         </div>
 
         <div className="field">
-          <label>Sale Price ($)</label>
+          <label>
+            <div className="toggle-group toggle-group-sm">
+              <button
+                className={priceMode === "price" ? "active" : ""}
+                onClick={() => { setPriceMode("price"); setPreview(null); }}
+              >
+                Sale Price ($)
+              </button>
+              <button
+                className={priceMode === "proceeds" ? "active" : ""}
+                onClick={() => { setPriceMode("proceeds"); setPreview(null); }}
+              >
+                Proceeds ($)
+              </button>
+            </div>
+          </label>
           <input
             type="number"
-            value={price}
+            value={priceInput}
             onChange={(e) => {
-              setPrice(e.target.value);
+              setPriceInput(e.target.value);
               setPreview(null);
             }}
             step="0.01"
             min={0}
+            placeholder={priceMode === "proceeds" ? "Total proceeds" : "Per share"}
           />
         </div>
 

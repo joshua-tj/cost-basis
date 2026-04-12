@@ -237,6 +237,11 @@ tfoot td {
   color: #fff;
 }
 
+.toggle-group-sm button {
+  font-size: 11px;
+  padding: 2px 8px;
+}
+
 .avail {
   font-size: 12px;
   color: var(--text);
