@@ -332,3 +332,18 @@ export function updateSale(
 
   sale.gainLoss = (sale.salePrice - sale.costBasisPerShare) * sale.qty;
 }
+
+export function deleteSales(saleIds: Set<string>) {
+  const ticker = activeTicker();
+  if (!ticker) return;
+
+  for (const id of saleIds) {
+    const sale = ticker.sales.find((s) => s.id === id);
+    if (!sale) continue;
+    // Restore shares to the lot
+    const lot = ticker.lots.find((l) => l.id === sale.lotId);
+    if (lot) lot.remainingQty += sale.qty;
+  }
+
+  ticker.sales = ticker.sales.filter((s) => !saleIds.has(s.id));
+}

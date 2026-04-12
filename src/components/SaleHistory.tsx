@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSnapshot } from "valtio";
-import { store, updateSale, REST_GROUP } from "../store";
+import { store, updateSale, deleteSales, REST_GROUP } from "../store";
 
 function EditableCell({
   value,
@@ -126,7 +126,20 @@ export function SaleHistory() {
         <div className="selection-actions">
           <button className="btn btn-sm btn-muted" onClick={selectAll}>Select All</button>
           {hasSelection && (
-            <button className="btn btn-sm btn-muted" onClick={clearSelection}>Clear</button>
+            <>
+              <button className="btn btn-sm btn-muted" onClick={clearSelection}>Clear</button>
+              <button
+                className="btn btn-sm btn-danger"
+                onClick={() => {
+                  if (confirm(`Delete ${selected.size} sale${selected.size > 1 ? "s" : ""}? Shares will be restored to their lots.`)) {
+                    deleteSales(selected);
+                    setSelected(new Set());
+                  }
+                }}
+              >
+                Delete ({selected.size})
+              </button>
+            </>
           )}
         </div>
       </div>
