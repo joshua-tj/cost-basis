@@ -86,20 +86,59 @@ function EditableSelect({
 
 export function SaleHistory() {
   const snap = useSnapshot(store);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const ticker = snap.tickers[snap.activeSymbol];
   if (!ticker || ticker.sales.length === 0) return null;
 
-  const totalGain = ticker.sales.reduce((s, sale) => s + sale.gainLoss, 0);
   const groupNames = [REST_GROUP, ...ticker.groups.map((g) => g.name)];
+  const allIds = ticker.sales.map((s) => s.id);
+  const allSelected = allIds.length > 0 && allIds.every((id) => selected.has(id));
+  const hasSelection = selected.size > 0;
+
+  const toggleOne = (id: string) => {
+    const next = new Set(selected);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelected(next);
+  };
+
+  const selectAll = () => setSelected(new Set(allIds));
+  const clearSelection = () => setSelected(new Set());
+
+  const displaySales = hasSelection
+    ? ticker.sales.filter((s) => selected.has(s.id))
+    : ticker.sales;
+
+  const totalQty = displaySales.reduce((s, sale) => s + sale.qty, 0);
+  const totalCostBasis = displaySales.reduce((s, sale) => s + sale.costBasisPerShare * sale.qty, 0);
+  const totalGain = displaySales.reduce((s, sale) => s + sale.gainLoss, 0);
+  const label = hasSelection ? `Selected (${selected.size})` : "Total Realized";
 
   return (
     <div className="sale-history">
-      <h2>Sale History</h2>
-      <p className="subtitle">Click any value to edit (except quantity). Gain/loss recalculates automatically.</p>
+      <div className="sale-history-header">
+        <div>
+          <h2>Sale History</h2>
+          <p className="subtitle">Click any value to edit (except quantity). Gain/loss recalculates automatically.</p>
+        </div>
+        <div className="selection-actions">
+          <button className="btn btn-sm btn-muted" onClick={selectAll}>Select All</button>
+          {hasSelection && (
+            <button className="btn btn-sm btn-muted" onClick={clearSelection}>Clear</button>
+          )}
+        </div>
+      </div>
       <table>
         <thead>
           <tr>
+            <th className="check-col">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={allSelected ? clearSelection : selectAll}
+              />
+            </th>
             <th>Date</th>
             <th>Group</th>
             <th>Lot</th>
@@ -113,7 +152,14 @@ export function SaleHistory() {
         </thead>
         <tbody>
           {ticker.sales.map((sale) => (
-            <tr key={sale.id}>
+            <tr key={sale.id} className={selected.has(sale.id) ? "selected-row" : ""}>
+              <td className="check-col">
+                <input
+                  type="checkbox"
+                  checked={selected.has(sale.id)}
+                  onChange={() => toggleOne(sale.id)}
+                />
+              </td>
               <td>
                 <EditableCell
                   value={sale.date}
@@ -164,11 +210,11 @@ export function SaleHistory() {
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan={3}>Total Realized</td>
-            <td className="num">{ticker.sales.reduce((s, sale) => s + sale.qty, 0).toLocaleString()}</td>
-            <td></td>
+            <td colSpan={4}>{label}</td>
+            <td className="num">{totalQty.toLocaleString()}</td>
+            <td colSpan={2}></td>
             <td className="num">
-              ${ticker.sales.reduce((s, sale) => s + sale.costBasisPerShare * sale.qty, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${totalCostBasis.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </td>
             <td className={`num ${totalGain >= 0 ? "gain" : "loss"}`}>
               ${totalGain.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

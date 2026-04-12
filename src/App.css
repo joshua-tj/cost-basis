@@ -443,6 +443,49 @@ select.inline-edit {
   width: auto;
 }
 
+/* Sale history header */
+.sale-history-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.sale-history-header h2,
+.sale-history-header .subtitle {
+  margin: 0;
+}
+
+.sale-history-header .subtitle {
+  margin-top: 4px;
+}
+
+.selection-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* Checkboxes */
+.check-col {
+  width: 32px;
+  text-align: center;
+  padding: 6px 4px;
+}
+
+.check-col input[type="checkbox"] {
+  cursor: pointer;
+}
+
+tr.selected-row td {
+  background: rgba(37, 99, 235, 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  tr.selected-row td {
+    background: rgba(96, 165, 250, 0.1);
+  }
+}
+
 /* Modal */
 .modal-backdrop {
   position: fixed;
