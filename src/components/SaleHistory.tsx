@@ -106,6 +106,7 @@ export function SaleHistory() {
             <th className="num">Qty</th>
             <th className="num">Sale Price</th>
             <th className="num">Cost Basis</th>
+            <th className="num">Total Cost Basis</th>
             <th className="num">Gain/Loss</th>
             <th>Tax</th>
           </tr>
@@ -145,6 +146,9 @@ export function SaleHistory() {
                   onSave={(v) => updateSale(sale.id, { costBasisPerShare: parseFloat(v) })}
                 />
               </td>
+              <td className="num">
+                ${(sale.costBasisPerShare * sale.qty).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </td>
               <td className={`num ${sale.gainLoss >= 0 ? "gain" : "loss"}`}>
                 ${sale.gainLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </td>
@@ -162,7 +166,10 @@ export function SaleHistory() {
           <tr>
             <td colSpan={3}>Total Realized</td>
             <td className="num">{ticker.sales.reduce((s, sale) => s + sale.qty, 0).toLocaleString()}</td>
-            <td colSpan={2}></td>
+            <td></td>
+            <td className="num">
+              ${ticker.sales.reduce((s, sale) => s + sale.costBasisPerShare * sale.qty, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </td>
             <td className={`num ${totalGain >= 0 ? "gain" : "loss"}`}>
               ${totalGain.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </td>
