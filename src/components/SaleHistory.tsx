@@ -160,7 +160,9 @@ export function SaleHistory() {
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan={6}>Total Realized</td>
+            <td colSpan={3}>Total Realized</td>
+            <td className="num">{ticker.sales.reduce((s, sale) => s + sale.qty, 0).toLocaleString()}</td>
+            <td colSpan={2}></td>
             <td className={`num ${totalGain >= 0 ? "gain" : "loss"}`}>
               ${totalGain.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </td>
