@@ -9,7 +9,7 @@ export interface Lot {
   remainingQty: number;
   costBasisPerShare: number;
   grantNumber: string;
-  vestPeriod: string;
+  vestId: string;
 }
 
 export interface Sale {
@@ -34,6 +34,7 @@ export interface TickerState {
   lots: Lot[];
   sales: Sale[];
   groups: Group[];
+  currentPrice: number | null;
 }
 
 export interface AppState {
@@ -54,6 +55,9 @@ function loadAll(): AppState | null {
         const t = parsed.tickers[sym];
         if (t && !t.groups) {
           t.groups = buildDefaultGroups(t.lots);
+        }
+        if (t && t.currentPrice === undefined) {
+          t.currentPrice = null;
         }
       }
       return parsed;
@@ -200,13 +204,10 @@ export function importCSV(csvText: string) {
 
     const costBasis = parseDollar(col(headers, row, "EstCostBasispershare", "CostBasis", "CostBasisPerShare"));
     const grantNumber = col(headers, row, "GrantNumber");
-    const vestPeriod = col(headers, row, "VestPeriod");
     const dateAcquired = parseDate(col(headers, row, "DateAcquired"));
-    const vestDate = col(headers, row, "VestDate");
+    const vestId = col(headers, row, "VestId", "VestPeriod", "VestDate") || dateAcquired;
 
-    const id = isEspp
-      ? `ESPP-${grantNumber}-${parseDate(vestDate)}`
-      : `${grantNumber}-v${vestPeriod}`;
+    const id = `${grantNumber}-${vestId}`;
 
     lots.push({
       id,
@@ -217,7 +218,7 @@ export function importCSV(csvText: string) {
       remainingQty: sellable,
       costBasisPerShare: costBasis,
       grantNumber,
-      vestPeriod,
+      vestId,
     });
   }
 
@@ -225,7 +226,7 @@ export function importCSV(csvText: string) {
 
   const symbol = lots[0].symbol;
   const groups = buildDefaultGroups(lots);
-  store.tickers[symbol] = { symbol, lots, sales: [], groups };
+  store.tickers[symbol] = { symbol, lots, sales: [], groups, currentPrice: null };
   if (!store.symbols.includes(symbol)) {
     store.symbols.push(symbol);
   }
@@ -240,6 +241,29 @@ function getTaxStatus(dateAcquired: string, saleDate: string): string {
   return diffMs >= oneYear ? "Long Term" : "Short Term";
 }
 
+// --- Price fetching ---
+
+export async function fetchCurrentPrice(): Promise<number> {
+  const ticker = activeTicker();
+  if (!ticker) throw new Error("No active ticker");
+
+  const url = `https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=${encodeURIComponent(ticker.symbol)}&requestMethod=itv&noCache=${Date.now()}&partnerId=2&fund=1&exthrs=1&output=json&events=1`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch price: ${res.status}`);
+  const data = await res.json();
+  const quote = data?.FormattedQuoteResult?.FormattedQuote?.[0];
+  if (!quote?.last) throw new Error("No price data returned");
+
+  const price = parseFloat(quote.last.replace(/,/g, ""));
+  if (isNaN(price)) throw new Error("Invalid price data");
+
+  ticker.currentPrice = price;
+  return price;
+}
+
+const SHORT_TERM_RATE = 0.37;
+const LONG_TERM_RATE = 0.15;
+
 // --- Lot ranking ---
 
 function planTypesForGroup(groupName: string): string[] {
@@ -250,17 +274,38 @@ function planTypesForGroup(groupName: string): string[] {
   return group ? group.planTypes : [];
 }
 
-export function rankedLots(groupName: string): Lot[] {
+function lotTaxCostPerShare(lot: Lot, price: number): number {
+  const gain = price - lot.costBasisPerShare;
+  const acquired = new Date(lot.dateAcquired);
+  const now = new Date();
+  const isLongTerm = now.getTime() - acquired.getTime() >= 365.25 * 24 * 60 * 60 * 1000;
+  return gain * (isLongTerm ? LONG_TERM_RATE : SHORT_TERM_RATE);
+}
+
+export function rankedLots(groupName: string, salePrice?: number): Lot[] {
   const ticker = activeTicker();
   if (!ticker) return [];
   const pts = planTypesForGroup(groupName);
-  return ticker.lots
-    .filter((l) => l.remainingQty > 0 && pts.includes(l.planType))
-    .sort((a, b) => {
-      if (b.costBasisPerShare !== a.costBasisPerShare)
-        return b.costBasisPerShare - a.costBasisPerShare;
+  const filtered = ticker.lots.filter((l) => l.remainingQty > 0 && pts.includes(l.planType));
+
+  const price = salePrice ?? ticker.currentPrice;
+  if (price != null) {
+    // Sort by tax cost ascending — sell the lot that costs the least tax first
+    // (most negative = biggest tax benefit from loss, least positive = smallest tax hit from gain)
+    return filtered.sort((a, b) => {
+      const taxA = lotTaxCostPerShare(a, price);
+      const taxB = lotTaxCostPerShare(b, price);
+      if (taxA !== taxB) return taxA - taxB;
       return a.dateAcquired.localeCompare(b.dateAcquired);
     });
+  }
+
+  // Fallback: highest cost basis first
+  return filtered.sort((a, b) => {
+    if (b.costBasisPerShare !== a.costBasisPerShare)
+      return b.costBasisPerShare - a.costBasisPerShare;
+    return a.dateAcquired.localeCompare(b.dateAcquired);
+  });
 }
 
 // --- Sale execution ---
@@ -274,7 +319,7 @@ export function executeSale(
   const ticker = activeTicker();
   if (!ticker) throw new Error("No active ticker");
 
-  const ranked = rankedLots(groupName);
+  const ranked = rankedLots(groupName, salePrice);
   let remaining = qty;
   const newSales: Sale[] = [];
 

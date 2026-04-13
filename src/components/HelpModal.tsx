@@ -28,7 +28,7 @@ export function HelpModal() {
           CSV Format Help
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>CSV Import Format</DialogTitle>
           <DialogDescription>
@@ -56,12 +56,11 @@ export function HelpModal() {
                 ["Quantity", "Yes", "Number of shares (0 = skipped)", "1308"],
                 ["Cost Basis", "Yes", "Per-share cost basis", "$38.00"],
                 ["Grant Number", "Yes", "Used to build the lot ID", "ES001950"],
-                ["Vest Period", "Yes", "Used to build the lot ID", "1"],
                 [
-                  "Vest Date",
-                  "ESPP only",
-                  "Used in lot ID for ESPP plans",
-                  "19-NOV-2021",
+                  "Vest ID",
+                  "No",
+                  "Used to build the lot ID. Falls back to Date Acquired if omitted.",
+                  "1",
                 ],
               ].map(([header, req, desc, example]) => (
                 <TableRow key={header}>
@@ -88,10 +87,10 @@ export function HelpModal() {
           <div>
             <h3 className="text-sm font-semibold mb-2">Minimum CSV example</h3>
             <pre className="rounded-lg border bg-muted/50 p-3 text-xs font-mono leading-relaxed overflow-x-auto">
-{`Symbol,Plan Type,Date Acquired,Quantity,Cost Basis,Grant Number,Vest Period
-HOOD,Perf. Shares,28-JUL-2021,1308,$38.00,ES001950,1
-HOOD,Rest. Stock,01-JUN-2022,741,$9.37,PH304545,1
-HOOD,ESPP,19-NOV-2021,272,$24.64,2021,0`}
+{`Symbol,Plan Type,Date Acquired,Quantity,Cost Basis,Grant Number
+HOOD,Perf. Shares,28-JUL-2021,1308,$38.00,ES001950
+HOOD,Rest. Stock,01-JUN-2022,741,$9.37,PH304545
+HOOD,ESPP,19-NOV-2021,272,$24.64,2021`}
             </pre>
           </div>
 
