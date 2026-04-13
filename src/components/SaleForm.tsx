@@ -1,6 +1,30 @@
 import { useState } from "react";
 import { useSnapshot } from "valtio";
-import { store, rankedLots, executeSale, REST_GROUP, restPlanTypes } from "../store";
+import {
+  store,
+  rankedLots,
+  executeSale,
+  REST_GROUP,
+  restPlanTypes,
+} from "../store";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export function SaleForm() {
   const snap = useSnapshot(store);
@@ -25,7 +49,10 @@ export function SaleForm() {
       : customGroups.find((g) => g.name === group)?.planTypes ?? [];
   const available = ticker
     ? ticker.lots
-        .filter((l) => l.remainingQty > 0 && groupPlanTypes.includes(l.planType))
+        .filter(
+          (l) =>
+            l.remainingQty > 0 && groupPlanTypes.includes(l.planType)
+        )
         .reduce((s, l) => s + l.remainingQty, 0)
     : 0;
 
@@ -42,7 +69,10 @@ export function SaleForm() {
     const q = parseInt(qty);
     const salePrice = getSalePrice();
     if (!q || q <= 0) return setError("Enter a valid quantity");
-    if (salePrice === null) return setError(`Enter a valid ${priceMode === "proceeds" ? "proceeds" : "price"}`);
+    if (salePrice === null)
+      return setError(
+        `Enter a valid ${priceMode === "proceeds" ? "proceeds" : "price"}`
+      );
     if (q > available) return setError(`Only ${available} shares available`);
 
     const ranked = rankedLots(group);
@@ -79,139 +109,201 @@ export function SaleForm() {
   if (allGroupNames.length === 0) return null;
 
   return (
-    <div className="sale-form">
-      <h2>Record Sale</h2>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Record Sale</CardTitle>
+        <CardDescription>
+          Select a group and enter sale details. Lots are sold highest cost basis
+          first.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap items-end gap-4">
+          {/* Group */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-foreground">Group</label>
+            <div className="flex items-center rounded-lg border bg-muted/50 p-0.5">
+              {allGroupNames.map((name) => (
+                <button
+                  key={name}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    group === name
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => {
+                    setGroup(name);
+                    setPreview(null);
+                  }}
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+          </div>
 
-      <div className="form-row">
-        <div className="field">
-          <label>Group</label>
-          <div className="toggle-group">
-            {allGroupNames.map((name) => (
+          {/* Qty */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-foreground">Shares</label>
+            <Input
+              type="number"
+              value={qty}
+              onChange={(e) => {
+                setQty(e.target.value);
+                setPreview(null);
+              }}
+              min={1}
+              max={available}
+              className="w-28"
+            />
+          </div>
+
+          {/* Price / Proceeds */}
+          <div className="space-y-1.5">
+            <div className="flex items-center rounded-md border bg-muted/50 p-0.5 w-fit">
               <button
-                key={name}
-                className={group === name ? "active" : ""}
+                className={`px-2 py-0.5 text-xs font-medium rounded transition-colors ${
+                  priceMode === "price"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
                 onClick={() => {
-                  setGroup(name);
+                  setPriceMode("price");
                   setPreview(null);
                 }}
               >
-                {name}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="field">
-          <label>Shares</label>
-          <input
-            type="number"
-            value={qty}
-            onChange={(e) => {
-              setQty(e.target.value);
-              setPreview(null);
-            }}
-            min={1}
-            max={available}
-          />
-        </div>
-
-        <div className="field">
-          <label>
-            <div className="toggle-group toggle-group-sm">
-              <button
-                className={priceMode === "price" ? "active" : ""}
-                onClick={() => { setPriceMode("price"); setPreview(null); }}
-              >
-                Sale Price ($)
+                Sale Price
               </button>
               <button
-                className={priceMode === "proceeds" ? "active" : ""}
-                onClick={() => { setPriceMode("proceeds"); setPreview(null); }}
+                className={`px-2 py-0.5 text-xs font-medium rounded transition-colors ${
+                  priceMode === "proceeds"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => {
+                  setPriceMode("proceeds");
+                  setPreview(null);
+                }}
               >
-                Proceeds ($)
+                Proceeds
               </button>
             </div>
-          </label>
-          <input
-            type="number"
-            value={priceInput}
-            onChange={(e) => {
-              setPriceInput(e.target.value);
-              setPreview(null);
-            }}
-            step="0.01"
-            min={0}
-            placeholder={priceMode === "proceeds" ? "Total proceeds" : "Per share"}
-          />
+            <Input
+              type="number"
+              value={priceInput}
+              onChange={(e) => {
+                setPriceInput(e.target.value);
+                setPreview(null);
+              }}
+              step="0.01"
+              min={0}
+              placeholder={
+                priceMode === "proceeds" ? "Total proceeds" : "Per share"
+              }
+              className="w-36"
+            />
+          </div>
+
+          {/* Date */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-foreground">Date</label>
+            <Input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-40"
+            />
+          </div>
+
+          <Button onClick={handlePreview}>Preview</Button>
         </div>
 
-        <div className="field">
-          <label>Date</label>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        </div>
+        <p className="text-xs text-muted-foreground">
+          {available.toLocaleString()} shares available
+        </p>
 
-        <div className="field">
-          <button className="btn" onClick={handlePreview}>
-            Preview
-          </button>
-        </div>
-      </div>
-      <span className="avail">{available.toLocaleString()} shares available</span>
+        {error && (
+          <p className="text-sm text-destructive font-medium">{error}</p>
+        )}
+        {success && (
+          <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+            {success}
+          </p>
+        )}
 
-      {error && <p className="error">{error}</p>}
-      {success && <p className="success">{success}</p>}
-
-      {preview && (
-        <div className="preview">
-          <h3>Sale Preview</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Lot</th>
-                <th className="num">Qty</th>
-                <th className="num">Cost Basis</th>
-                <th className="num">Gain/Loss</th>
-              </tr>
-            </thead>
-            <tbody>
-              {preview.map((a) => (
-                <tr key={a.lotId}>
-                  <td className="mono">{a.lotId}</td>
-                  <td className="num">{a.qty.toLocaleString()}</td>
-                  <td className="num">${a.costBasis.toFixed(2)}</td>
-                  <td className={`num ${a.gainLoss >= 0 ? "gain" : "loss"}`}>
-                    ${a.gainLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td>Total</td>
-                <td className="num">
-                  {preview.reduce((s, a) => s + a.qty, 0).toLocaleString()}
-                </td>
-                <td></td>
-                <td
-                  className={`num ${preview.reduce((s, a) => s + a.gainLoss, 0) >= 0 ? "gain" : "loss"}`}
-                >
-                  $
-                  {preview
-                    .reduce((s, a) => s + a.gainLoss, 0)
-                    .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-          <button className="btn confirm-btn" onClick={handleConfirm}>
-            Confirm Sale
-          </button>
-        </div>
-      )}
-    </div>
+        {preview && (
+          <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+            <h3 className="text-sm font-semibold">Sale Preview</h3>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Lot</TableHead>
+                  <TableHead className="text-right">Qty</TableHead>
+                  <TableHead className="text-right">Cost Basis</TableHead>
+                  <TableHead className="text-right">Gain/Loss</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {preview.map((a) => (
+                  <TableRow key={a.lotId}>
+                    <TableCell className="font-mono text-xs">
+                      {a.lotId}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {a.qty.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      ${a.costBasis.toFixed(2)}
+                    </TableCell>
+                    <TableCell
+                      className={`text-right tabular-nums font-medium ${
+                        a.gainLoss >= 0
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-destructive"
+                      }`}
+                    >
+                      $
+                      {a.gainLoss.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+              <TableFooter>
+                <TableRow>
+                  <TableCell className="font-semibold">Total</TableCell>
+                  <TableCell className="text-right tabular-nums font-semibold">
+                    {preview
+                      .reduce((s, a) => s + a.qty, 0)
+                      .toLocaleString()}
+                  </TableCell>
+                  <TableCell />
+                  <TableCell
+                    className={`text-right tabular-nums font-semibold ${
+                      preview.reduce((s, a) => s + a.gainLoss, 0) >= 0
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-destructive"
+                    }`}
+                  >
+                    $
+                    {preview
+                      .reduce((s, a) => s + a.gainLoss, 0)
+                      .toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                  </TableCell>
+                </TableRow>
+              </TableFooter>
+            </Table>
+            <Button onClick={handleConfirm} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              Confirm Sale
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

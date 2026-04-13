@@ -1,6 +1,22 @@
 import { useState } from "react";
 import { useSnapshot } from "valtio";
-import { store, addGroup, removeGroup, updateGroup, allPlanTypes } from "../store";
+import {
+  store,
+  addGroup,
+  removeGroup,
+  updateGroup,
+  allPlanTypes,
+} from "../store";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 export function GroupManager() {
   const snap = useSnapshot(store);
@@ -43,92 +59,151 @@ export function GroupManager() {
   };
 
   const handleSaveEdit = () => {
-    if (editingIdx === null || !editName.trim() || editPlanTypes.length === 0) return;
+    if (editingIdx === null || !editName.trim() || editPlanTypes.length === 0)
+      return;
     updateGroup(editingIdx, editName.trim(), editPlanTypes);
     setEditingIdx(null);
   };
 
   return (
-    <div className="group-manager">
-      <h2>Groups</h2>
-      <p className="subtitle">
-        Groups determine which plan types are sold together.
-        Available plans: {planTypes.join(", ")}
-      </p>
-
-      <div className="group-list">
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg">Groups</CardTitle>
+            <CardDescription>
+              Separate lots by plan type. Plans not in a group go to "Rest".
+              Available: {planTypes.join(", ")}
+            </CardDescription>
+          </div>
+          {!adding && (
+            <Button variant="outline" size="sm" onClick={() => setAdding(true)}>
+              + Add Group
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
         {ticker.groups.map((group, idx) => (
-          <div key={idx} className="group-item">
+          <div
+            key={idx}
+            className="flex items-center justify-between rounded-lg border p-3"
+          >
             {editingIdx === idx ? (
-              <div className="group-edit-form">
-                <input
-                  type="text"
+              <div className="flex flex-col gap-2 w-full">
+                <Input
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   placeholder="Group name"
+                  className="w-48"
                 />
-                <div className="plan-type-chips">
+                <div className="flex gap-1.5 flex-wrap">
                   {planTypes.map((pt) => (
-                    <button
+                    <Badge
                       key={pt}
-                      className={`chip ${editPlanTypes.includes(pt) ? "active" : ""}`}
-                      onClick={() => togglePlanType(pt, editPlanTypes, setEditPlanTypes)}
+                      variant={
+                        editPlanTypes.includes(pt) ? "default" : "outline"
+                      }
+                      className="cursor-pointer select-none"
+                      onClick={() =>
+                        togglePlanType(pt, editPlanTypes, setEditPlanTypes)
+                      }
                     >
                       {pt}
-                    </button>
+                    </Badge>
                   ))}
                 </div>
-                <div className="group-edit-actions">
-                  <button className="btn btn-sm" onClick={handleSaveEdit}>Save</button>
-                  <button className="btn btn-sm btn-muted" onClick={() => setEditingIdx(null)}>Cancel</button>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleSaveEdit}>
+                    Save
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setEditingIdx(null)}
+                  >
+                    Cancel
+                  </Button>
                 </div>
               </div>
             ) : (
               <>
-                <div className="group-info">
-                  <strong>{group.name}</strong>
-                  <span className="group-plans">{group.planTypes.join(", ")}</span>
+                <div className="flex items-center gap-3">
+                  <span className="font-medium">{group.name}</span>
+                  <div className="flex gap-1">
+                    {group.planTypes.map((pt) => (
+                      <Badge key={pt} variant="secondary" className="text-xs">
+                        {pt}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-                <div className="group-actions">
-                  <button className="btn btn-sm btn-muted" onClick={() => handleStartEdit(idx)}>Edit</button>
-                  <button className="btn btn-sm btn-danger" onClick={() => removeGroup(idx)}>Remove</button>
+                <div className="flex gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleStartEdit(idx)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => removeGroup(idx)}
+                  >
+                    Remove
+                  </Button>
                 </div>
               </>
             )}
           </div>
         ))}
-      </div>
 
-      {adding ? (
-        <div className="group-add-form">
-          <input
-            type="text"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="Group name"
-            autoFocus
-          />
-          <div className="plan-type-chips">
-            {planTypes.map((pt) => (
-              <button
-                key={pt}
-                className={`chip ${newPlanTypes.includes(pt) ? "active" : ""}`}
-                onClick={() => togglePlanType(pt, newPlanTypes, setNewPlanTypes)}
+        {adding && (
+          <div className="rounded-lg border border-dashed p-3 space-y-2">
+            <Input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Group name"
+              className="w-48"
+              autoFocus
+            />
+            <div className="flex gap-1.5 flex-wrap">
+              {planTypes.map((pt) => (
+                <Badge
+                  key={pt}
+                  variant={newPlanTypes.includes(pt) ? "default" : "outline"}
+                  className="cursor-pointer select-none"
+                  onClick={() =>
+                    togglePlanType(pt, newPlanTypes, setNewPlanTypes)
+                  }
+                >
+                  {pt}
+                </Badge>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleAdd}>
+                Add
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setAdding(false)}
               >
-                {pt}
-              </button>
-            ))}
+                Cancel
+              </Button>
+            </div>
           </div>
-          <div className="group-edit-actions">
-            <button className="btn btn-sm" onClick={handleAdd}>Add</button>
-            <button className="btn btn-sm btn-muted" onClick={() => setAdding(false)}>Cancel</button>
-          </div>
-        </div>
-      ) : (
-        <button className="btn btn-sm" onClick={() => setAdding(true)}>
-          + Add Group
-        </button>
-      )}
-    </div>
+        )}
+
+        {ticker.groups.length === 0 && !adding && (
+          <p className="text-sm text-muted-foreground py-2">
+            No custom groups. All lots are in "Rest".
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }

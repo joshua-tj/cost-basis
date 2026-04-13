@@ -1,6 +1,25 @@
 import { useState } from "react";
 import { useSnapshot } from "valtio";
 import { store, updateSale, deleteSales, REST_GROUP } from "../store";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 
 function EditableCell({
   value,
@@ -18,15 +37,22 @@ function EditableCell({
 
   if (!editing) {
     return (
-      <span className="editable" onClick={() => { setDraft(value); setEditing(true); }}>
-        {prefix}{type === "number" ? parseFloat(value).toFixed(2) : value}
+      <span
+        className="cursor-pointer rounded px-1 py-0.5 border-b border-dashed border-border hover:bg-muted transition-colors"
+        onClick={() => {
+          setDraft(value);
+          setEditing(true);
+        }}
+      >
+        {prefix}
+        {type === "number" ? parseFloat(value).toFixed(2) : value}
       </span>
     );
   }
 
   return (
     <input
-      className="inline-edit"
+      className="w-24 rounded border border-primary bg-background px-1.5 py-0.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
       type={type}
       value={draft}
       step={type === "number" ? "0.01" : undefined}
@@ -60,7 +86,10 @@ function EditableSelect({
 
   if (!editing) {
     return (
-      <span className="editable" onClick={() => setEditing(true)}>
+      <span
+        className="cursor-pointer rounded px-1 py-0.5 border-b border-dashed border-border hover:bg-muted transition-colors"
+        onClick={() => setEditing(true)}
+      >
         {value}
       </span>
     );
@@ -68,7 +97,7 @@ function EditableSelect({
 
   return (
     <select
-      className="inline-edit"
+      className="rounded border border-primary bg-background px-1.5 py-0.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
       value={value}
       autoFocus
       onChange={(e) => {
@@ -78,11 +107,19 @@ function EditableSelect({
       onBlur={() => setEditing(false)}
     >
       {options.map((o) => (
-        <option key={o} value={o}>{o}</option>
+        <option key={o} value={o}>
+          {o}
+        </option>
       ))}
     </select>
   );
 }
+
+const fmt = (n: number) =>
+  n.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
 export function SaleHistory() {
   const snap = useSnapshot(store);
@@ -93,7 +130,8 @@ export function SaleHistory() {
 
   const groupNames = [REST_GROUP, ...ticker.groups.map((g) => g.name)];
   const allIds = ticker.sales.map((s) => s.id);
-  const allSelected = allIds.length > 0 && allIds.every((id) => selected.has(id));
+  const allSelected =
+    allIds.length > 0 && allIds.every((id) => selected.has(id));
   const hasSelection = selected.size > 0;
 
   const toggleOne = (id: string) => {
@@ -111,140 +149,197 @@ export function SaleHistory() {
     : ticker.sales;
 
   const totalQty = displaySales.reduce((s, sale) => s + sale.qty, 0);
-  const totalProceeds = displaySales.reduce((s, sale) => s + sale.salePrice * sale.qty, 0);
-  const totalCostBasis = displaySales.reduce((s, sale) => s + sale.costBasisPerShare * sale.qty, 0);
+  const totalProceeds = displaySales.reduce(
+    (s, sale) => s + sale.salePrice * sale.qty,
+    0
+  );
+  const totalCostBasis = displaySales.reduce(
+    (s, sale) => s + sale.costBasisPerShare * sale.qty,
+    0
+  );
   const totalGain = displaySales.reduce((s, sale) => s + sale.gainLoss, 0);
-  const label = hasSelection ? `Selected (${selected.size})` : "Total Realized";
 
   return (
-    <div className="sale-history">
-      <div className="sale-history-header">
-        <div>
-          <h2>Sale History</h2>
-          <p className="subtitle">Click any value to edit (except quantity). Gain/loss recalculates automatically.</p>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg">Sale History</CardTitle>
+            <CardDescription>
+              Click values to edit (except quantity). Gain/loss recalculates
+              automatically.
+            </CardDescription>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={selectAll}>
+              Select All
+            </Button>
+            {hasSelection && (
+              <>
+                <Button variant="outline" size="sm" onClick={clearSelection}>
+                  Clear
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    if (
+                      confirm(
+                        `Delete ${selected.size} sale${selected.size > 1 ? "s" : ""}? Shares will be restored to their lots.`
+                      )
+                    ) {
+                      deleteSales(selected);
+                      setSelected(new Set());
+                    }
+                  }}
+                >
+                  Delete ({selected.size})
+                </Button>
+              </>
+            )}
+          </div>
         </div>
-        <div className="selection-actions">
-          <button className="btn btn-sm btn-muted" onClick={selectAll}>Select All</button>
-          {hasSelection && (
-            <>
-              <button className="btn btn-sm btn-muted" onClick={clearSelection}>Clear</button>
-              <button
-                className="btn btn-sm btn-danger"
-                onClick={() => {
-                  if (confirm(`Delete ${selected.size} sale${selected.size > 1 ? "s" : ""}? Shares will be restored to their lots.`)) {
-                    deleteSales(selected);
-                    setSelected(new Set());
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={allSelected}
+                  onCheckedChange={() =>
+                    allSelected ? clearSelection() : selectAll()
                   }
-                }}
+                />
+              </TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Group</TableHead>
+              <TableHead>Lot</TableHead>
+              <TableHead className="text-right">Qty</TableHead>
+              <TableHead className="text-right">Sale Price</TableHead>
+              <TableHead className="text-right">Proceeds</TableHead>
+              <TableHead className="text-right">Cost Basis</TableHead>
+              <TableHead className="text-right">Total Cost Basis</TableHead>
+              <TableHead className="text-right">Gain/Loss</TableHead>
+              <TableHead className="text-right">Tax</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {ticker.sales.map((sale) => (
+              <TableRow
+                key={sale.id}
+                className={selected.has(sale.id) ? "bg-primary/5" : ""}
               >
-                Delete ({selected.size})
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th className="check-col">
-              <input
-                type="checkbox"
-                checked={allSelected}
-                onChange={allSelected ? clearSelection : selectAll}
-              />
-            </th>
-            <th>Date</th>
-            <th>Group</th>
-            <th>Lot</th>
-            <th className="num">Qty</th>
-            <th className="num">Sale Price</th>
-            <th className="num">Proceeds</th>
-            <th className="num">Cost Basis</th>
-            <th className="num">Total Cost Basis</th>
-            <th className="num">Gain/Loss</th>
-            <th>Tax</th>
-          </tr>
-        </thead>
-        <tbody>
-          {ticker.sales.map((sale) => (
-            <tr key={sale.id} className={selected.has(sale.id) ? "selected-row" : ""}>
-              <td className="check-col">
-                <input
-                  type="checkbox"
-                  checked={selected.has(sale.id)}
-                  onChange={() => toggleOne(sale.id)}
-                />
-              </td>
-              <td>
-                <EditableCell
-                  value={sale.date}
-                  type="date"
-                  onSave={(v) => updateSale(sale.id, { date: v })}
-                />
-              </td>
-              <td>
-                <EditableSelect
-                  value={sale.group}
-                  options={groupNames}
-                  onSave={(v) => updateSale(sale.id, { group: v })}
-                />
-              </td>
-              <td className="mono">{sale.lotId}</td>
-              <td className="num">{sale.qty.toLocaleString()}</td>
-              <td className="num">
-                <EditableCell
-                  value={sale.salePrice.toString()}
-                  type="number"
-                  prefix="$"
-                  onSave={(v) => updateSale(sale.id, { salePrice: parseFloat(v) })}
-                />
-              </td>
-              <td className="num">
-                ${(sale.salePrice * sale.qty).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </td>
-              <td className="num">
-                <EditableCell
-                  value={sale.costBasisPerShare.toString()}
-                  type="number"
-                  prefix="$"
-                  onSave={(v) => updateSale(sale.id, { costBasisPerShare: parseFloat(v) })}
-                />
-              </td>
-              <td className="num">
-                ${(sale.costBasisPerShare * sale.qty).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </td>
-              <td className={`num ${sale.gainLoss >= 0 ? "gain" : "loss"}`}>
-                ${sale.gainLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </td>
-              <td>
-                <EditableSelect
-                  value={sale.taxStatus}
-                  options={["Long Term", "Short Term"]}
-                  onSave={(v) => updateSale(sale.id, { taxStatus: v })}
-                />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colSpan={4}>{label}</td>
-            <td className="num">{totalQty.toLocaleString()}</td>
-            <td></td>
-            <td className="num">
-              ${totalProceeds.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </td>
-            <td></td>
-            <td className="num">
-              ${totalCostBasis.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </td>
-            <td className={`num ${totalGain >= 0 ? "gain" : "loss"}`}>
-              ${totalGain.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </td>
-            <td></td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
+                <TableCell>
+                  <Checkbox
+                    checked={selected.has(sale.id)}
+                    onCheckedChange={() => toggleOne(sale.id)}
+                  />
+                </TableCell>
+                <TableCell>
+                  <EditableCell
+                    value={sale.date}
+                    type="date"
+                    onSave={(v) => updateSale(sale.id, { date: v })}
+                  />
+                </TableCell>
+                <TableCell>
+                  <EditableSelect
+                    value={sale.group}
+                    options={groupNames}
+                    onSave={(v) => updateSale(sale.id, { group: v })}
+                  />
+                </TableCell>
+                <TableCell className="font-mono text-xs">
+                  {sale.lotId}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {sale.qty.toLocaleString()}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  <EditableCell
+                    value={sale.salePrice.toString()}
+                    type="number"
+                    prefix="$"
+                    onSave={(v) =>
+                      updateSale(sale.id, { salePrice: parseFloat(v) })
+                    }
+                  />
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  ${fmt(sale.salePrice * sale.qty)}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  <EditableCell
+                    value={sale.costBasisPerShare.toString()}
+                    type="number"
+                    prefix="$"
+                    onSave={(v) =>
+                      updateSale(sale.id, {
+                        costBasisPerShare: parseFloat(v),
+                      })
+                    }
+                  />
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  ${fmt(sale.costBasisPerShare * sale.qty)}
+                </TableCell>
+                <TableCell
+                  className={`text-right tabular-nums font-medium ${
+                    sale.gainLoss >= 0
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-destructive"
+                  }`}
+                >
+                  ${fmt(sale.gainLoss)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Badge
+                    variant={
+                      sale.taxStatus === "Long Term" ? "secondary" : "outline"
+                    }
+                    className="text-xs"
+                  >
+                    <EditableSelect
+                      value={sale.taxStatus}
+                      options={["Long Term", "Short Term"]}
+                      onSave={(v) => updateSale(sale.id, { taxStatus: v })}
+                    />
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+          <TableFooter>
+            <TableRow>
+              <TableCell colSpan={4} className="font-semibold">
+                {hasSelection ? `Selected (${selected.size})` : "Total Realized"}
+              </TableCell>
+              <TableCell className="text-right tabular-nums font-semibold">
+                {totalQty.toLocaleString()}
+              </TableCell>
+              <TableCell />
+              <TableCell className="text-right tabular-nums font-semibold">
+                ${fmt(totalProceeds)}
+              </TableCell>
+              <TableCell />
+              <TableCell className="text-right tabular-nums font-semibold">
+                ${fmt(totalCostBasis)}
+              </TableCell>
+              <TableCell
+                className={`text-right tabular-nums font-semibold ${
+                  totalGain >= 0
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-destructive"
+                }`}
+              >
+                ${fmt(totalGain)}
+              </TableCell>
+              <TableCell />
+            </TableRow>
+          </TableFooter>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }
