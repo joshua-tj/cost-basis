@@ -198,7 +198,6 @@ export function importCSV(csvText: string) {
     if (!symbol || symbol === "Overall Total") continue;
 
     const planType = col(headers, row, "PlanType");
-    const isEspp = planType === "ESPP";
     const sellable = parseInt(col(headers, row, "Quantity", "Qty", "SellableQty")) || 0;
     if (sellable <= 0) continue;
 
