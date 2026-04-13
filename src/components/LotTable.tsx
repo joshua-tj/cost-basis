@@ -1,5 +1,5 @@
 import { useSnapshot } from "valtio";
-import { store, REST_GROUP, restPlanTypes } from "../store";
+import { store, REST_GROUP, restPlanTypes, rankedLots } from "../store";
 import {
   Card,
   CardContent,
@@ -38,14 +38,11 @@ export function LotTable({ groupName }: { groupName: string }) {
 
   if (planTypes.length === 0) return null;
 
-  const lots = ticker.lots
-    .filter((l) => planTypes.includes(l.planType))
-    .slice()
-    .sort((a, b) => {
-      if (b.costBasisPerShare !== a.costBasisPerShare)
-        return b.costBasisPerShare - a.costBasisPerShare;
-      return a.dateAcquired.localeCompare(b.dateAcquired);
-    });
+  const hasPrice = ticker.currentPrice != null;
+  const allGroupLots = ticker.lots.filter((l) => planTypes.includes(l.planType));
+  const ranked = rankedLots(groupName);
+  const depleted = allGroupLots.filter((l) => l.remainingQty === 0);
+  const lots = [...ranked, ...depleted];
 
   if (lots.length === 0) return null;
 
@@ -67,7 +64,7 @@ export function LotTable({ groupName }: { groupName: string }) {
           <div>
             <CardTitle className="text-lg">{groupName}</CardTitle>
             <CardDescription>
-              {planTypes.join(", ")} — highest cost basis sold first
+              {planTypes.join(", ")} — {hasPrice ? "lowest tax cost sold first" : "highest cost basis sold first"}
             </CardDescription>
           </div>
           <div className="flex gap-2">
@@ -101,11 +98,12 @@ export function LotTable({ groupName }: { groupName: string }) {
             {lots.map((lot, i) => {
               const sold = lot.originalQty - lot.remainingQty;
               const pct = (sold / lot.originalQty) * 100;
-              const depleted = lot.remainingQty === 0;
+              const isDepleted = lot.remainingQty === 0;
+              const isLT = taxStatus(lot.dateAcquired) === "Long Term";
               return (
                 <TableRow
                   key={lot.id}
-                  className={depleted ? "opacity-40" : ""}
+                  className={isDepleted ? "opacity-40" : ""}
                 >
                   <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                   <TableCell className="font-mono text-xs">
@@ -135,14 +133,10 @@ export function LotTable({ groupName }: { groupName: string }) {
                   </TableCell>
                   <TableCell className="text-right">
                     <Badge
-                      variant={
-                        taxStatus(lot.dateAcquired) === "Long Term"
-                          ? "secondary"
-                          : "outline"
-                      }
+                      variant={isLT ? "secondary" : "outline"}
                       className="text-xs"
                     >
-                      {taxStatus(lot.dateAcquired)}
+                      {isLT ? "Long Term" : "Short Term"}
                     </Badge>
                   </TableCell>
                 </TableRow>

@@ -75,7 +75,7 @@ export function SaleForm() {
       );
     if (q > available) return setError(`Only ${available} shares available`);
 
-    const ranked = rankedLots(group);
+    const ranked = rankedLots(group, salePrice);
     let remaining = q;
     const allocs: typeof preview = [];
     for (const lot of ranked) {
@@ -113,8 +113,8 @@ export function SaleForm() {
       <CardHeader>
         <CardTitle className="text-lg">Record Sale</CardTitle>
         <CardDescription>
-          Select a group and enter sale details. Lots are sold highest cost basis
-          first.
+          Select a group and enter sale details. Lots are sold by lowest estimated
+          tax cost when a price is available, otherwise highest cost basis first.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

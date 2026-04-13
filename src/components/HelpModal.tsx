@@ -55,7 +55,7 @@ export function HelpModal() {
                 ["Date Acquired", "Yes", "Format: DD-MON-YYYY", "28-JUL-2021"],
                 ["Quantity", "Yes", "Number of shares (0 = skipped)", "1308"],
                 ["Cost Basis", "Yes", "Per-share cost basis", "$38.00"],
-                ["Grant Number", "Yes", "Used to build the lot ID", "ES001950"],
+                ["Grant ID", "Yes", "Used to build the lot ID", "ES001950"],
                 [
                   "Vest ID",
                   "No",
@@ -87,7 +87,7 @@ export function HelpModal() {
           <div>
             <h3 className="text-sm font-semibold mb-2">Minimum CSV example</h3>
             <pre className="rounded-lg border bg-muted/50 p-3 text-xs font-mono leading-relaxed overflow-x-auto">
-{`Symbol,Plan Type,Date Acquired,Quantity,Cost Basis,Grant Number
+{`Symbol,Plan Type,Date Acquired,Quantity,Cost Basis,Grant ID
 HOOD,Perf. Shares,28-JUL-2021,1308,$38.00,ES001950
 HOOD,Rest. Stock,01-JUN-2022,741,$9.37,PH304545
 HOOD,ESPP,19-NOV-2021,272,$24.64,2021`}
@@ -95,13 +95,22 @@ HOOD,ESPP,19-NOV-2021,272,$24.64,2021`}
           </div>
 
           <div>
+            <h3 className="text-sm font-semibold mb-2">Example prompt for AI</h3>
+            <p className="text-sm text-muted-foreground mb-2">
+              Copy your equity statement into Claude or ChatGPT with this prompt:
+            </p>
+            <pre className="rounded-lg border bg-muted/50 p-3 text-xs font-mono leading-relaxed overflow-x-auto whitespace-pre-wrap">
+{`Convert this into a CSV with these columns:
+Symbol, Plan Type, Date Acquired, Quantity, Cost Basis, Grant ID
+
+Use DD-MON-YYYY for dates. One row per lot.`}
+            </pre>
+          </div>
+
+          <div>
             <h3 className="text-sm font-semibold mb-2">Notes</h3>
             <ul className="space-y-1 text-sm text-muted-foreground list-disc pl-4">
-              <li>
-                Also accepts the full Robinhood equity export format (columns
-                matched by header).
-              </li>
-              <li>Dates must be in DD-MON-YYYY format (e.g. 01-MAR-2023).</li>
+<li>Dates must be in DD-MON-YYYY format (e.g. 01-MAR-2023).</li>
               <li>Dollar values can include $, commas, and spaces.</li>
               <li>
                 Quoted fields with commas inside are handled (standard CSV

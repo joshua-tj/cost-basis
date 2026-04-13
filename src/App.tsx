@@ -1,5 +1,6 @@
+import { useEffect } from "react";
 import { useSnapshot } from "valtio";
-import { store, importCSV, switchTicker, REST_GROUP } from "./store";
+import { store, importCSV, switchTicker, REST_GROUP, fetchCurrentPrice } from "./store";
 import { LotTable } from "./components/LotTable";
 import { SaleForm } from "./components/SaleForm";
 import { SaleHistory } from "./components/SaleHistory";
@@ -11,6 +12,12 @@ import { Separator } from "@/components/ui/separator";
 function App() {
   const snap = useSnapshot(store);
   const ticker = snap.tickers[snap.activeSymbol];
+
+  useEffect(() => {
+    if (snap.activeSymbol) {
+      fetchCurrentPrice().catch(() => {});
+    }
+  }, [snap.activeSymbol]);
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -32,15 +39,8 @@ function App() {
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
               Cost Basis Tracker
             </h1>
-            {ticker && (
-              <p className="mt-1 text-sm text-muted-foreground">
-                Tracking {snap.activeSymbol} lots and sales
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
             {snap.symbols.length > 0 && (
-              <div className="flex items-center rounded-lg border bg-muted/50 p-0.5">
+              <div className="mt-2 flex items-center rounded-lg border bg-muted/50 p-0.5 w-fit">
                 {snap.symbols.map((sym) => (
                   <button
                     key={sym}
@@ -56,6 +56,8 @@ function App() {
                 ))}
               </div>
             )}
+          </div>
+          <div className="flex items-center gap-3">
             <HelpModal />
             <Button className="cursor-pointer" onClick={() => document.getElementById('csv-input')?.click()}>
               Import CSV

@@ -8,7 +8,7 @@ export interface Lot {
   originalQty: number;
   remainingQty: number;
   costBasisPerShare: number;
-  grantNumber: string;
+  grantId: string;
   vestId: string;
 }
 
@@ -203,11 +203,11 @@ export function importCSV(csvText: string) {
     if (sellable <= 0) continue;
 
     const costBasis = parseDollar(col(headers, row, "EstCostBasispershare", "CostBasis", "CostBasisPerShare"));
-    const grantNumber = col(headers, row, "GrantNumber");
+    const grantId = col(headers, row, "GrantId", "GrantNumber");
     const dateAcquired = parseDate(col(headers, row, "DateAcquired"));
     const vestId = col(headers, row, "VestId", "VestPeriod", "VestDate") || dateAcquired;
 
-    const id = `${grantNumber}-${vestId}`;
+    const id = `${grantId}-${vestId}`;
 
     lots.push({
       id,
@@ -217,7 +217,7 @@ export function importCSV(csvText: string) {
       originalQty: sellable,
       remainingQty: sellable,
       costBasisPerShare: costBasis,
-      grantNumber,
+      grantId,
       vestId,
     });
   }
